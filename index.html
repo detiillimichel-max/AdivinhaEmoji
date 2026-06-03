@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎯 AdivinhaEmoji</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap');
+
+  :root {
+    --yellow: #FFD93D;
+    --orange: #FF6B35;
+    --pink: #FF4D8B;
+    --purple: #A855F7;
+    --blue: #3B82F6;
+    --green: #22C55E;
+    --cyan: #06B6D4;
+    --bg: #0F0A1E;
+    --card: #1A1030;
+    --border: rgba(255,255,255,0.08);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: var(--bg);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    overflow-x: hidden;
+  }
+
+  /* Animated background blobs */
+  .bg-blobs {
+    position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden;
+  }
+  .blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.18;
+    animation: blobFloat 8s ease-in-out infinite alternate;
+  }
+  .blob1 { width: 400px; height: 400px; background: var(--purple); top: -100px; left: -100px; animation-delay: 0s; }
+  .blob2 { width: 350px; height: 350px; background: var(--pink); top: 50%; right: -80px; animation-delay: 2s; }
+  .blob3 { width: 300px; height: 300px; background: var(--blue); bottom: -80px; left: 30%; animation-delay: 4s; }
+  .blob4 { width: 250px; height: 250px; background: var(--yellow); top: 20%; left: 40%; animation-delay: 1s; }
+  @keyframes blobFloat { from { transform: translate(0,0) scale(1); } to { transform: translate(30px, 20px) scale(1.1); } }
+
+  .container {
+    position: relative; z-index: 1;
+    width: 100%; max-width: 520px;
+  }
+
+  /* Header */
+  .header {
+    text-align: center;
+    margin-bottom: 24px;
+    animation: slideDown 0.6s ease;
+  }
+  .header h1 {
+    font-family: 'Fredoka One', cursive;
+    font-size: 2.8rem;
+    background: linear-gradient(135deg, var(--yellow), var(--orange), var(--pink));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1;
+  }
+  .header p {
+    color: rgba(255,255,255,0.5);
+    font-size: 0.9rem;
+    margin-top: 4px;
+  }
+
+  /* Score bar */
+  .score-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 12px 20px;
+    margin-bottom: 16px;
+    animation: slideDown 0.6s ease 0.1s both;
+  }
+  .score-item {
+    text-align: center;
+  }
+  .score-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: rgba(255,255,255,0.4);
+  }
+  .score-value {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.5rem;
+    color: white;
+  }
+  .score-value.streak { color: var(--yellow); }
+  .score-value.points { color: var(--green); }
+
+  /* Category selector */
+  .categories {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 16px;
+    animation: slideDown 0.6s ease 0.15s both;
+  }
+  .cat-btn {
+    padding: 6px 14px;
+    border-radius: 100px;
+    border: 1.5px solid var(--border);
+    background: var(--card);
+    color: rgba(255,255,255,0.6);
+    font-family: 'Nunito', sans-serif;
+    font-weight: 700;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .cat-btn:hover { border-color: rgba(255,255,255,0.3); color: white; }
+  .cat-btn.active { color: white; }
+  .cat-btn[data-cat="🎬"] { border-color: var(--orange); background: rgba(255,107,53,0.15); color: var(--orange); }
+  .cat-btn[data-cat="📺"] { border-color: var(--purple); background: rgba(168,85,247,0.15); color: var(--purple); }
+  .cat-btn[data-cat="🎵"] { border-color: var(--pink); background: rgba(255,77,139,0.15); color: var(--pink); }
+  .cat-btn[data-cat="🎮"] { border-color: var(--blue); background: rgba(59,130,246,0.15); color: var(--blue); }
+  .cat-btn[data-cat="📚"] { border-color: var(--green); background: rgba(34,197,94,0.15); color: var(--green); }
+  .cat-btn.selected {
+    transform: scale(1.05);
+    box-shadow: 0 0 12px currentColor;
+  }
+
+  /* Main card */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 28px 24px;
+    animation: slideDown 0.6s ease 0.2s both;
+    position: relative;
+    overflow: hidden;
+  }
+  .card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.03), transparent);
+    pointer-events: none;
+  }
+
+  /* Emoji display */
+  .emoji-display {
+    text-align: center;
+    padding: 20px 0;
+    min-height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+  }
+  .emoji-text {
+    font-size: 3.5rem;
+    line-height: 1.3;
+    letter-spacing: 4px;
+    animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+  .category-badge {
+    display: inline-block;
+    margin-top: 8px;
+    padding: 4px 12px;
+    border-radius: 100px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  /* Loading state */
+  .loading-dots {
+    display: flex; gap: 6px; align-items: center; justify-content: center;
+  }
+  .dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--purple);
+    animation: dotBounce 1s ease-in-out infinite;
+  }
+  .dot:nth-child(2) { background: var(--pink); animation-delay: 0.15s; }
+  .dot:nth-child(3) { background: var(--yellow); animation-delay: 0.3s; }
+  @keyframes dotBounce {
+    0%, 80%, 100% { transform: scale(1); opacity: 0.5; }
+    40% { transform: scale(1.4); opacity: 1; }
+  }
+
+  /* Hints */
+  .hints-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .hint-chip {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    color: rgba(255,255,255,0.5);
+    animation: fadeIn 0.3s ease;
+  }
+  .hint-chip span { color: white; font-weight: 700; }
+
+  /* Input area */
+  .input-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 8px;
+  }
+  .guess-input {
+    flex: 1;
+    background: rgba(255,255,255,0.07);
+    border: 1.5px solid var(--border);
+    border-radius: 14px;
+    padding: 14px 18px;
+    color: white;
+    font-family: 'Nunito', sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .guess-input:focus { border-color: var(--purple); }
+  .guess-input::placeholder { color: rgba(255,255,255,0.25); }
+  .guess-input.correct { border-color: var(--green); background: rgba(34,197,94,0.1); }
+  .guess-input.wrong { border-color: var(--pink); background: rgba(255,77,139,0.1); animation: shake 0.4s ease; }
+
+  .send-btn {
+    width: 52px; height: 52px;
+    border-radius: 14px;
+    border: none;
+    background: linear-gradient(135deg, var(--purple), var(--pink));
+    color: white;
+    font-size: 1.4rem;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: transform 0.2s, box-shadow 0.2s;
+    flex-shrink: 0;
+  }
+  .send-btn:hover { transform: scale(1.08); box-shadow: 0 4px 20px rgba(168,85,247,0.4); }
+  .send-btn:active { transform: scale(0.95); }
+
+  /* Actions row */
+  .actions-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 14px;
+  }
+  .action-btn {
+    flex: 1;
+    padding: 11px;
+    border-radius: 12px;
+    border: 1.5px solid var(--border);
+    background: transparent;
+    color: rgba(255,255,255,0.6);
+    font-family: 'Nunito', sans-serif;
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .action-btn:hover { background: rgba(255,255,255,0.06); color: white; border-color: rgba(255,255,255,0.2); }
+  .action-btn.hint-btn:hover { border-color: var(--yellow); color: var(--yellow); }
+  .action-btn.skip-btn:hover { border-color: var(--orange); color: var(--orange); }
+  .action-btn.new-btn {
+    border-color: var(--purple);
+    color: var(--purple);
+    background: rgba(168,85,247,0.1);
+  }
+  .action-btn.new-btn:hover { background: rgba(168,85,247,0.2); }
+
+  /* Feedback overlay */
+  .feedback {
+    display: none;
+    position: absolute;
+    inset: 0;
+    border-radius: 24px;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 10;
+    animation: fadeIn 0.3s ease;
+  }
+  .feedback.show { display: flex; }
+  .feedback.correct-fb { background: rgba(34,197,94,0.15); backdrop-filter: blur(4px); }
+  .feedback.wrong-fb { background: rgba(255,77,139,0.1); backdrop-filter: blur(4px); }
+  .feedback-emoji { font-size: 4rem; animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+  .feedback-title {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.8rem;
+    color: white;
+  }
+  .feedback-sub {
+    color: rgba(255,255,255,0.6);
+    font-size: 0.9rem;
+    text-align: center;
+    padding: 0 20px;
+  }
+  .feedback-answer {
+    background: rgba(255,255,255,0.1);
+    border-radius: 10px;
+    padding: 8px 16px;
+    font-weight: 700;
+    color: white;
+    font-size: 1rem;
+  }
+  .feedback-next-btn {
+    margin-top: 8px;
+    padding: 12px 32px;
+    border-radius: 12px;
+    border: none;
+    background: linear-gradient(135deg, var(--purple), var(--pink));
+    color: white;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 800;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: transform 0.2s;
+  }
+  .feedback-next-btn:hover { transform: scale(1.05); }
+
+  /* Hint counter */
+  .hint-counter {
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.3);
+    text-align: center;
+    margin-top: 8px;
+  }
+
+  /* Animations */
+  @keyframes slideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes popIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    25% { transform: translateX(-8px); }
+    75% { transform: translateX(8px); }
+  }
+
+  /* Confetti canvas */
+  #confetti-canvas {
+    position: fixed; inset: 0;
+    pointer-events: none;
+    z-index: 100;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="confetti-canvas"></canvas>
+
+<div class="bg-blobs">
+  <div class="blob blob1"></div>
+  <div class="blob blob2"></div>
+  <div class="blob blob3"></div>
+  <div class="blob blob4"></div>
+</div>
+
+<div class="container">
+  <div class="header">
+    <h1>🎯 AdivinhaEmoji</h1>
+    <p>Descubra o que os emojis escondem</p>
+  </div>
+
+  <div class="score-bar">
+    <div class="score-item">
+      <div class="score-label">Pontos</div>
+      <div class="score-value points" id="points">0</div>
+    </div>
+    <div class="score-item">
+      <div class="score-label">🔥 Sequência</div>
+      <div class="score-value streak" id="streak">0</div>
+    </div>
+    <div class="score-item">
+      <div class="score-label">Rodada</div>
+      <div class="score-value" id="round">1</div>
+    </div>
+  </div>
+
+  <div class="categories" id="categories">
+    <button class="cat-btn selected" data-cat="🎬">🎬 Filmes</button>
+    <button class="cat-btn selected" data-cat="📺">📺 Séries</button>
+    <button class="cat-btn selected" data-cat="🎵">🎵 Músicas</button>
+    <button class="cat-btn selected" data-cat="🎮">🎮 Games</button>
+    <button class="cat-btn selected" data-cat="📚">📚 Livros</button>
+  </div>
+
+  <div class="card" id="main-card">
+    <div class="emoji-display" id="emoji-display">
+      <div class="loading-dots">
+        <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+      </div>
+    </div>
+
+    <div class="hints-row" id="hints-row"></div>
+
+    <div class="input-row">
+      <input type="text" class="guess-input" id="guess-input" placeholder="Sua resposta..." autocomplete="off" />
+      <button class="send-btn" id="send-btn">→</button>
+    </div>
+
+    <div class="actions-row">
+      <button class="action-btn hint-btn" id="hint-btn">💡 Dica</button>
+      <button class="action-btn skip-btn" id="skip-btn">⏭ Pular</button>
+      <button class="action-btn new-btn" id="new-btn">🔀 Novo</button>
+    </div>
+
+    <div class="hint-counter" id="hint-counter"></div>
+
+    <!-- Feedback overlay -->
+    <div class="feedback" id="feedback">
+      <div class="feedback-emoji" id="fb-emoji"></div>
+      <div class="feedback-title" id="fb-title"></div>
+      <div class="feedback-sub" id="fb-sub"></div>
+      <div class="feedback-answer" id="fb-answer" style="display:none"></div>
+      <button class="feedback-next-btn" id="fb-next">Próximo →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const CATEGORY_COLORS = {
+  '🎬': { color: '#FF6B35', bg: 'rgba(255,107,53,0.15)' },
+  '📺': { color: '#A855F7', bg: 'rgba(168,85,247,0.15)' },
+  '🎵': { color: '#FF4D8B', bg: 'rgba(255,77,139,0.15)' },
+  '🎮': { color: '#3B82F6', bg: 'rgba(59,130,246,0.15)' },
+  '📚': { color: '#22C55E', bg: 'rgba(34,197,94,0.15)' },
+};
+const CATEGORY_NAMES = {
+  '🎬': 'Filme', '📺': 'Série', '🎵': 'Música', '🎮': 'Game', '📚': 'Livro'
+};
+
+let state = {
+  points: 0,
+  streak: 0,
+  round: 1,
+  hintsUsed: 0,
+  maxHints: 3,
+  currentAnswer: '',
+  currentCategory: '',
+  currentHints: [],
+  loading: false,
+  selectedCats: ['🎬','📺','🎵','🎮','📚'],
+};
+
+// Category toggle
+document.getElementById('categories').addEventListener('click', e => {
+  const btn = e.target.closest('.cat-btn');
+  if (!btn) return;
+  const cat = btn.dataset.cat;
+  const idx = state.selectedCats.indexOf(cat);
+  if (idx === -1) {
+    state.selectedCats.push(cat);
+    btn.classList.add('selected');
+  } else {
+    if (state.selectedCats.length === 1) return; // at least 1
+    state.selectedCats.splice(idx, 1);
+    btn.classList.remove('selected');
+  }
+});
+
+document.getElementById('send-btn').addEventListener('click', submitGuess);
+document.getElementById('guess-input').addEventListener('keydown', e => { if (e.key === 'Enter') submitGuess(); });
+document.getElementById('hint-btn').addEventListener('click', showHint);
+document.getElementById('skip-btn').addEventListener('click', () => showResult(false, true));
+document.getElementById('new-btn').addEventListener('click', loadQuestion);
+document.getElementById('fb-next').addEventListener('click', () => {
+  document.getElementById('feedback').classList.remove('show');
+  loadQuestion();
+});
+
+async function loadQuestion() {
+  if (state.loading) return;
+  state.loading = true;
+  state.hintsUsed = 0;
+  state.currentAnswer = '';
+  state.currentHints = [];
+
+  // Reset UI
+  document.getElementById('hints-row').innerHTML = '';
+  document.getElementById('hint-counter').textContent = '';
+  document.getElementById('feedback').classList.remove('show');
+  const input = document.getElementById('guess-input');
+  input.value = '';
+  input.className = 'guess-input';
+  input.disabled = false;
+
+  const cat = state.selectedCats[Math.floor(Math.random() * state.selectedCats.length)];
+  state.currentCategory = cat;
+  const catName = CATEGORY_NAMES[cat];
+
+  showLoading();
+
+  const prompt = `Você é um gerador de desafios de adivinhação de emojis. Gere UMA entrada da categoria "${catName}" para o jogo.
+
+REGRAS OBRIGATÓRIAS:
+- Escolha um título famoso e conhecido no Brasil (filmes, séries, músicas, games ou livros populares)
+- Use de 4 a 8 emojis que representem VISUALMENTE a essência do título, sem usar letras
+- Gere 3 dicas progressivas (da mais vaga para a mais específica) sobre o título, sem revelar o nome
+- As dicas devem ser em português
+
+RESPONDA APENAS com JSON válido nesse formato exato (sem markdown, sem texto extra):
+{
+  "title": "Nome do título em português",
+  "emojis": "🔥💧🌊⚡",
+  "hints": ["Dica vaga", "Dica média", "Dica específica"]
+}`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await res.json();
+    const raw = data.content[0].text.trim().replace(/```json|```/g, '').trim();
+    const parsed = JSON.parse(raw);
+
+    state.currentAnswer = parsed.title.toLowerCase().trim();
+    state.currentHints = parsed.hints;
+
+    showEmojis(parsed.emojis, cat);
+  } catch (err) {
+    console.error(err);
+    showEmojiError();
+  }
+  state.loading = false;
+}
+
+function showLoading() {
+  document.getElementById('emoji-display').innerHTML = `
+    <div class="loading-dots">
+      <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+    </div>`;
+}
+
+function showEmojis(emojis, cat) {
+  const colors = CATEGORY_COLORS[cat];
+  document.getElementById('emoji-display').innerHTML = `
+    <div class="emoji-text">${emojis}</div>
+    <div class="category-badge" style="background:${colors.bg};color:${colors.color}">${cat} ${CATEGORY_NAMES[cat]}</div>
+  `;
+}
+
+function showEmojiError() {
+  document.getElementById('emoji-display').innerHTML = `<div style="color:rgba(255,255,255,0.4);font-size:0.9rem">Erro ao carregar. Tente novamente.</div>`;
+}
+
+function showHint() {
+  if (state.hintsUsed >= state.maxHints || !state.currentHints.length) return;
+  const hint = state.currentHints[state.hintsUsed];
+  state.hintsUsed++;
+
+  const row = document.getElementById('hints-row');
+  const chip = document.createElement('div');
+  chip.className = 'hint-chip';
+  chip.innerHTML = `💡 <span>${hint}</span>`;
+  row.appendChild(chip);
+
+  const remaining = state.maxHints - state.hintsUsed;
+  document.getElementById('hint-counter').textContent =
+    remaining > 0 ? `${remaining} dica${remaining > 1 ? 's' : ''} restante${remaining > 1 ? 's' : ''}` : 'Sem mais dicas';
+}
+
+function normalizeStr(s) {
+  return s.toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9 ]/g, '')
+    .trim();
+}
+
+function submitGuess() {
+  const input = document.getElementById('guess-input');
+  const guess = input.value.trim();
+  if (!guess || !state.currentAnswer) return;
+
+  const norm = normalizeStr(guess);
+  const ans = normalizeStr(state.currentAnswer);
+
+  // Flexible matching: exact or contains
+const correct = norm === ans || ans.includes(norm) || norm.includes(ans);
+
+  if (correct) {
+    input.classList.add('correct');
+    const bonus = Math.max(0, (state.maxHints - state.hintsUsed)) * 50;
+    const gained = 100 + bonus;
+    state.points += gained;
+    state.streak++;
+    if (state.streak > 1) state.points += state.streak * 10;
+    updateScores();
+    setTimeout(() => showResult(true, false, gained), 300);
+    launchConfetti();
+  } else {
+    input.classList.add('wrong');
+    input.value = '';
+    setTimeout(() => {
+      input.classList.remove('wrong');
+      input.placeholder = 'Tente de novo...';
+    }, 500);
+  }
+}
+
+function showResult(correct, skipped = false, gained = 0) {
+  const fb = document.getElementById('feedback');
+  const fbEmoji = document.getElementById('fb-emoji');
+  const fbTitle = document.getElementById('fb-title');
+  const fbSub = document.getElementById('fb-sub');
+  const fbAnswer = document.getElementById('fb-answer');
+
+  document.getElementById('guess-input').disabled = true;
+
+  if (correct) {
+    fb.className = 'feedback show correct-fb';
+    fbEmoji.textContent = ['🎉','🔥','⚡','🌟','💥'][Math.floor(Math.random()*5)];
+    fbTitle.textContent = 'Acertou!';
+    fbSub.textContent = `+${gained} pontos${state.streak > 1 ? ` · 🔥 ${state.streak} em sequência!` : ''}`;
+    fbAnswer.style.display = 'none';
+  } else {
+    fb.className = 'feedback show wrong-fb';
+    fbEmoji.textContent = skipped ? '⏭️' : '😅';
+    fbTitle.textContent = skipped ? 'Pulou!' : 'Que pena!';
+    fbSub.textContent = 'A resposta era:';
+    fbAnswer.style.display = 'block';
+    fbAnswer.textContent = state.currentAnswer.replace(/\b\w/g, l => l.toUpperCase());
+    state.streak = 0;
+    updateScores();
+  }
+
+  state.round++;
+  document.getElementById('round').textContent = state.round;
+  fb.classList.add('show');
+}
+
+function updateScores() {
+  document.getElementById('points').textContent = state.points;
+  document.getElementById('streak').textContent = state.streak;
+}
+
+// Simple confetti
+function launchConfetti() {
+  const canvas = document.getElementById('confetti-canvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  const colors = ['#FFD93D','#FF6B35','#FF4D8B','#A855F7','#3B82F6','#22C55E'];
+  const pieces = Array.from({length: 80}, () => ({
+    x: Math.random() * canvas.width,
+    y: -10,
+    r: Math.random() * 6 + 3,
+    color: colors[Math.floor(Math.random() * colors.length)],
+    vx: (Math.random() - 0.5) * 4,
+    vy: Math.random() * 4 + 2,
+    rot: Math.random() * 360,
+    rotV: (Math.random() - 0.5) * 8,
+  }));
+
+  let frame;
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    pieces.forEach(p => {
+      p.x += p.vx; p.y += p.vy; p.rot += p.rotV; p.vy += 0.08;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot * Math.PI / 180);
+      ctx.fillStyle = p.color;
+      ctx.fillRect(-p.r, -p.r/2, p.r*2, p.r);
+      ctx.restore();
+    });
+    if (pieces.some(p => p.y < canvas.height + 20)) {
+      frame = requestAnimationFrame(draw);
+    } else {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+  }
+  if (frame) cancelAnimationFrame(frame);
+  draw();
+  setTimeout(() => { cancelAnimationFrame(frame); ctx.clearRect(0,0,canvas.width,canvas.height); }, 3000);
+}
+
+// Init
+loadQuestion();
+</script>
+</body>
+</html>
